@@ -20,9 +20,9 @@ localparam IDLE      = 3'd0,
 
 reg [2:0] state, next_state;
 
-reg [7:0] grid  [0:80];  // 81 cells, each 8-bit (0/1..9)
-reg       fixed [0:80];  // 1 = given clue, cannot change
-reg [3:0] cand  [0:80];  // candidate pointer for each cell (1..9)
+reg [7:0] grid  [0:80]; 
+reg       fixed [0:80]; 
+reg [3:0] cand  [0:80]; 
 
 reg [6:0] addr_counter;  // for ROM/RAM streaming 0..80
 
@@ -30,11 +30,11 @@ reg [6:0] addr_counter;  // for ROM/RAM streaming 0..80
 reg [6:0] pos;           // 0..81 (81 means solved)
 
 // Solve sub-FSM
-localparam S_FIND      = 3'd0,  // move to next cell to fill (skip fixed)
-           S_TRY       = 3'd1,  // if cand>9 => backtrack else check
-		   S_CHECK     = 3'd2,  // validate cand at pos
-		   S_BACK_CLR  = 3'd3,  // clear current pos, step back
-		   S_BACK_SKIP = 3'd4;  // skip fixed while stepping back, then try next cand
+localparam S_FIND      = 3'd0,  
+           S_TRY       = 3'd1,  
+		   S_CHECK     = 3'd2,  
+		   S_BACK_CLR  = 3'd3,  
+		   S_BACK_SKIP = 3'd4;  
 
 reg [2:0] solve_state;
 
@@ -123,24 +123,19 @@ always @(posedge clk or posedge rst) begin
 				pos         <= 7'd0;
 				solve_state <= S_FIND;
 
-				// (optional) clear candidates for cleanliness
 				for (i = 0; i < 81; i = i + 1) begin
 					cand[i] <= 4'd0;
 				end
 			end
 			READ_ROM: begin
-				// latch ROM_Q into grid[addr_counter]
 				grid[addr_counter]  <= ROM_Q;
 				fixed[addr_counter] <= (ROM_Q != 8'd0);
 
-				// next address
 				addr_counter <= (addr_counter == 7'd80) ? 7'd0 : (addr_counter + 7'd1);
 
-				// prepare solve
 				if (addr_counter == 7'd80) begin
 					pos         <= 7'd0;
 					solve_state <= S_FIND;
-					// reset cand pointers
 					for (i = 0; i < 81; i = i + 1) begin
 						cand[i] <= 4'd0;
 					end
@@ -148,24 +143,17 @@ always @(posedge clk or posedge rst) begin
 			end
 			SOLVE: begin
 				case (solve_state)
-
-					// Move forward to find a non-fixed position to fill
 					S_FIND: begin
 						if (pos == 7'd81) begin
-							// solved (guard)
 							solve_state <= S_FIND;
 						end else if (fixed[pos]) begin
 							pos <= pos + 7'd1;
 						end else begin
-							// this cell is editable
-							// ensure it's empty before trying
 							grid[pos] <= 8'd0;
 							cand[pos] <= 4'd1;
 							solve_state <= S_TRY;
 						end
 					end
-
-					// Decide to check or backtrack
 					S_TRY: begin
 						if (cand[pos] > 4'd9) begin
 							solve_state <= S_BACK_CLR;
@@ -173,8 +161,6 @@ always @(posedge clk or posedge rst) begin
 							solve_state <= S_CHECK;
 						end
 					end
-
-					// Validate candidate
 					S_CHECK: begin
 						if (is_valid(pos, cand[pos])) begin
 							grid[pos] <= {4'b0, cand[pos]}; // place number
@@ -185,15 +171,11 @@ always @(posedge clk or posedge rst) begin
 							solve_state <= S_TRY;
 						end
 					end
-
-					// Clear current cell and step back
 					S_BACK_CLR: begin
-						// clear current editable cell (the one that failed)
 						grid[pos] <= 8'd0;
 						cand[pos] <= 4'd0;
 
 						if (pos == 7'd0) begin
-							// theoretically no-solution; keep safe
 							pos <= 7'd0;
 							solve_state <= S_FIND;
 						end else begin
@@ -201,9 +183,6 @@ always @(posedge clk or posedge rst) begin
 							solve_state <= S_BACK_SKIP;
 						end
 					end
-
-					// Skip fixed cells while moving backward;
-					// when landing on editable cell: clear it and try next candidate
 					S_BACK_SKIP: begin
 						if (fixed[pos]) begin
 							if (pos == 7'd0) begin
@@ -212,7 +191,6 @@ always @(posedge clk or posedge rst) begin
 								pos <= pos - 7'd1;
 							end
 						end else begin
-							// clear previous editable cell then increment candidate and retry
 							grid[pos] <= 8'd0;
 							cand[pos] <= cand[pos] + 4'd1;
 							solve_state <= S_TRY;
@@ -236,7 +214,6 @@ always @(posedge clk or posedge rst) begin
 end
 
 always @(*) begin
-	// defaults
 	ROM_rd  = 1'b0;
 	ROM_A   = 7'd0;
 
