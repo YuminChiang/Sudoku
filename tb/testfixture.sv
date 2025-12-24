@@ -1,5 +1,5 @@
 `timescale 1ns/10ps
-`define CYCLE      20.0   
+`define CYCLE      40.0   
 `define MAX_CYCLE  10000      	        
 `define tb2		// Modify to test different pattern
 
