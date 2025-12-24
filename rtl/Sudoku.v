@@ -107,7 +107,6 @@ always @(posedge clk or posedge rst) begin
 		pos          <= 7'd0;
 		solve_state  <= S_FIND;
 
-		// clear arrays (synth OK for small arrays like 81 entries)
 		for (i = 0; i < 81; i = i + 1) begin
 			grid[i]  <= 8'd0;
 			fixed[i] <= 1'b0;
