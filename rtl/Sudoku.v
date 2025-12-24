@@ -53,10 +53,10 @@ always @(posedge clk or posedge rst) begin
 			end
 			READ_ROM: begin
 				grid[addr_counter] <= ROM_Q;
-				addr_counter <= addr_counter + 1;
+				addr_counter <= (addr_counter == 7'd81) ? 7'd0 : addr_counter + 1;
 			end
 			WRITE_RAM: begin
-				addr_counter <= addr_counter + 1;
+				addr_counter <= (addr_counter == 7'd81) ? 7'd0 : addr_counter + 1;
 			end
 			DONE: begin
 				done <= 1'b1;
